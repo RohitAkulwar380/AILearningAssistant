@@ -89,7 +89,7 @@ def get_transcript(url: str) -> str:
     # YT-API Video Transcript endpoint
     rapid_url = "https://yt-api.p.rapidapi.com/get_transcript"
     headers = {
-        "X-RapidAPI-Key": s.rapidapi_key,
+        "X-RapidAPI-Key": s.rapidapi_key.strip(),
         "X-RapidAPI-Host": "yt-api.p.rapidapi.com"
     }
     params = {"id": video_id}
