@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Study — AI Learning Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Syne+Mono&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0c0c0b;
+  --surface: #131310;
+  --surface-2: #1a1a17;
+  --border: #2a2a26;
+  --border-light: #333330;
+  --text: #f0ede6;
+  --text-mid: #888880;
+  --text-dim: #484844;
+  --accent: #e8c97a;
+  --accent-dim: rgba(232,201,122,0.1);
+  --green: #7ab87a;
+  --green-dim: rgba(122,184,122,0.1);
+  --red: #c4735a;
+  --red-dim: rgba(196,115,90,0.1);
+  --violet: #9b84d4;
+  --violet-dim: rgba(155,132,212,0.1);
+}
+
+html { background: var(--bg); }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── HEADER ──────────────────────────────── */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 48px;
+  height: 60px;
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100;
+  background: var(--bg);
+  opacity: 0;
+}
+.wordmark {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.wordmark em { color: var(--accent); font-style: normal; }
+.status-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Syne Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  transition: color 0.4s ease;
+}
+.status-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: all 0.4s ease;
+  flex-shrink: 0;
+}
+.status-tag.live { color: var(--green); }
+.status-tag.live .status-dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+/* ── LAYOUT ──────────────────────────────── */
+.page-grid {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  min-height: calc(100vh - 60px);
+}
+
+/* ── SIDEBAR ─────────────────────────────── */
+.sidebar {
+  border-right: 1px solid var(--border);
+  padding: 40px 32px;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transform: translateX(-16px);
+}
+.section-label {
+  font-family: 'Syne Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 20px;
+}
+.source-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--border);
+  margin-bottom: 28px;
+}
+.src-btn {
+  padding: 11px 0;
+  font-family: 'Syne', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.src-btn.active { background: var(--surface-2); color: var(--text); }
+.src-btn:first-child { border-right: 1px solid var(--border); }
+
+.field-group { margin-bottom: 20px; }
+.field-label {
+  font-family: 'Syne Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  display: block;
+  margin-bottom: 8px;
+}
+.field-input {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  padding: 11px 14px;
+  outline: none;
+  border-radius: 0;
+  transition: border-color 0.2s ease;
+  -webkit-appearance: none;
+}
+.field-input::placeholder { color: var(--text-dim); font-style: italic; }
+.field-input:focus { border-color: var(--accent); }
+
+/* Drop zone */
+.drop-zone {
+  width: 100%;
+  background: var(--surface);
+  border: 1px dashed var(--border-light);
+  padding: 28px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.drop-zone:hover, .drop-zone.hovered {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+.drop-zone.has-file {
+  border-style: solid;
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+.drop-icon {
+  width: 32px; height: 32px;
+  border: 1px solid var(--border-light);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 12px;
+}
+.drop-icon svg { width: 14px; height: 14px; stroke: var(--text-mid); }
+.drop-zone p { font-size: 12px; color: var(--text-mid); line-height: 1.7; }
+.drop-zone p strong { color: var(--text); font-weight: 500; }
+.drop-note {
+  font-family: 'Syne Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  margin-top: 8px;
+  display: block;
+}
+
+/* Process button */
+.process-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--text);
+  color: var(--bg);
+  border: none;
+  font-family: 'Syne', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-bottom: 28px;
+  position: relative;
+  overflow: hidden;
+  transition: color 0.25s ease;
+}
+.process-btn .btn-bg {
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease;
+  z-index: 0;
+}
+.process-btn:hover .btn-bg { transform: scaleX(1); }
+.process-btn:disabled .btn-bg { display: none; }
+.process-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.process-btn .btn-progress {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: rgba(0,0,0,0.12);
+  width: 0%;
+  z-index: 1;
+}
+.process-btn .btn-label { position: relative; z-index: 2; }
+.process-btn.processing { background: var(--surface-2); color: var(--text-mid); }
+.process-btn.done { background: var(--green); color: var(--bg); }
+.process-btn.done .btn-bg { display: none; }
+
+.sidebar-divider { height: 1px; background: var(--border); margin: 4px 0 28px; }
+.notes-block { margin-top: auto; padding-top: 28px; border-top: 1px solid var(--border); }
+.notes-block .note-title {
+  font-family: 'Syne Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+.notes-block p { font-size: 11px; color: var(--text-dim); line-height: 1.9; }
+
+/* ── RIGHT PANEL ─────────────────────────── */
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transform: translateY(16px);
+}
+
+/* Tab bar */
+.tab-bar {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  padding: 0 48px;
+}
+.tab-btn {
+  font-family: 'Syne', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 18px 20px 16px;
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition: all 0.2s ease;
+}
+.tab-btn:hover { color: var(--text-mid); }
+.tab-btn.active { color: var(--text); border-bottom-color: var(--accent); }
+
+/* Tab panes */
+.tab-pane { display: none; flex: 1; padding: 48px; flex-direction: column; }
+.tab-pane.active { display: flex; }
+
+/* ── FLASHCARDS ──────────────────────────── */
+.fc-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.fc-label {
+  font-family: 'Syne', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.fc-counter {
+  font-family: 'Syne Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+}
+.fc-progress {
+  height: 1px;
+  background: var(--border);
+  margin-bottom: 44px;
+  position: relative;
+  overflow: visible;
+}
+.fc-progress-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: var(--accent);
+  transition: width 0.6s cubic-bezier(0.65,0,0.35,1);
+}
+
+/* Card */
+.card-scene {
+  perspective: 1400px;
+  cursor: pointer;
+  flex: 1;
+  min-height: 240px;
+  margin-bottom: 28px;
+}
+.card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 240px;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.76,0,0.24,1);
+}
+.card-inner.flipped { transform: rotateY(180deg); }
+.card-face {
+  position: absolute; inset: 0;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 48px 60px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.card-back { transform: rotateY(180deg); background: var(--surface-2); border-color: var(--border-light); }
+.card-tag {
+  position: absolute;
+  top: 20px; left: 24px;
+  font-family: 'Syne Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.card-flip-hint {
+  position: absolute;
+  top: 20px; right: 24px;
+  font-family: 'Syne Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+.card-q {
+  font-family: 'Syne', sans-serif;
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+.card-a {
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--text-mid);
+  font-style: italic;
+}
+.card-hint {
+  position: absolute;
+  bottom: 20px;
+  font-family: 'Syne Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* Card nav */
+.card-nav {
+  display: flex;
+  border: 1px solid var(--border);
+}
+.cnav-btn {
+  flex: 1;
+  padding: 13px;
+  border: none;
+  border-right: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-mid);
+  font-family: 'Syne', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.cnav-btn:last-child { border-right: none; }
+.cnav-btn:hover { background: var(--surface-2); color: var(--text); }
+.cnav-btn.flip { background: var(--accent-dim); color: var(--accent); }
+.cnav-btn.flip:hover { background: var(--accent); color: var(--bg); }
+
+/* ── QUIZ ────────────────────────────────── */
+.quiz-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.quiz-counter {
+  font-family: 'Syne Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.score-badge {
+  font-family: 'Syne Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  padding: 4px 10px;
+  border: 1px solid;
+  display: none;
+}
+.score-badge.good { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+.score-badge.ok { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+
+.seg-track {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 36px;
+}
+.seg {
+  flex: 1; height: 3px;
+  background: var(--border);
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+.seg.active { background: var(--text-mid); }
+.seg.correct { background: var(--green); }
+.seg.wrong { background: var(--red); }
+
+.q-block { margin-bottom: 24px; }
+.q-num {
+  font-family: 'Syne Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  display: block;
+  margin-bottom: 10px;
+}
+.q-text {
+  font-family: 'Syne', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+/* Options */
+.opt-row {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  margin-bottom: 6px;
+  cursor: pointer;
+  background: transparent;
+  text-align: left;
+  width: 100%;
+  color: var(--text-mid);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+.opt-row::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--accent);
+  transform: scaleY(0);
+  transform-origin: center;
+  transition: transform 0.2s ease;
+}
+.opt-row:hover { border-color: var(--border-light); color: var(--text); }
+.opt-row:hover::before { transform: scaleY(1); }
+
+.opt-row.selected { border-color: var(--violet); background: var(--violet-dim); color: var(--text); }
+.opt-row.selected::before { background: var(--violet); transform: scaleY(1); }
+.opt-row.correct-ans { border-color: var(--green); background: var(--green-dim); color: var(--text); }
+.opt-row.correct-ans::before { background: var(--green); transform: scaleY(1); }
+.opt-row.wrong-ans { border-color: var(--red); background: var(--red-dim); color: var(--text-mid); }
+.opt-row.wrong-ans::before { background: var(--red); transform: scaleY(1); }
+
+.opt-key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--border);
+  font-family: 'Syne Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.05em;
+  background: var(--surface);
+  padding: 12px 0;
+}
+.opt-row.selected .opt-key { background: var(--violet-dim); color: var(--violet); border-color: var(--violet); }
+.opt-row.correct-ans .opt-key { background: var(--green-dim); color: var(--green); border-color: var(--green); }
+.opt-row.wrong-ans .opt-key { background: var(--red-dim); color: var(--red); border-color: var(--red); }
+.opt-text { padding: 12px 14px; line-height: 1.5; }
+
+.explanation {
+  border-left: 2px solid var(--border);
+  padding: 12px 16px;
+  margin: 14px 0;
+  font-size: 13px;
+  color: var(--text-mid);
+  line-height: 1.75;
+  display: none;
+  font-style: italic;
+}
+.explanation.show { display: block; }
+.explanation.correct-ex { border-left-color: var(--green); color: rgba(122,184,122,0.75); }
+.explanation.wrong-ex { border-left-color: var(--red); }
+.explanation strong {
+  font-style: normal;
+  font-weight: 600;
+  font-family: 'Syne Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 6px;
+}
+.explanation.correct-ex strong { color: var(--green); }
+.explanation.wrong-ex strong { color: var(--red); }
+
+.submit-btn {
+  width: 100%;
+  padding: 14px;
+  background: transparent;
+  border: 1px solid var(--border-light);
+  color: var(--text-mid);
+  font-family: 'Syne', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.2s ease;
+}
+.submit-btn:hover:not(:disabled) { background: var(--text); color: var(--bg); border-color: var(--text); }
+.submit-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ── CHAT ────────────────────────────────── */
+#tab-chat { padding: 0; gap: 0; }
+.chat-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 40px 48px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.chat-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-bottom: 4px;
+}
+.chat-empty-label {
+  font-family: 'Syne Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+}
+.chat-empty-heading {
+  font-family: 'Syne', sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--text);
+}
+.chat-empty-heading em { font-style: italic; font-weight: 400; color: var(--text-mid); }
+
+.chat-msg { display: flex; flex-direction: column; gap: 5px; margin-bottom: 22px; }
+.chat-msg-label {
+  font-family: 'Syne Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.chat-msg.user .chat-msg-label { text-align: right; }
+.chat-bubble {
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--text-mid);
+  max-width: 72%;
+}
+.chat-msg.ai .chat-bubble {
+  border-left: 2px solid var(--border-light);
+  padding-left: 14px;
+}
+.chat-msg.user .chat-bubble {
+  align-self: flex-end;
+  text-align: right;
+  color: var(--text);
+  border-right: 2px solid var(--accent);
+  padding-right: 14px;
+}
+
+@keyframes blink-bar { 0%,100%{opacity:1} 50%{opacity:0} }
+.type-cursor {
+  display: inline-block;
+  width: 2px; height: 14px;
+  background: var(--text-mid);
+  vertical-align: middle;
+  margin-left: 1px;
+  animation: blink-bar 0.8s infinite;
+}
+@keyframes bar-pulse {
+  0%,80%,100% { transform: scaleY(0.35); opacity: 0.3; }
+  40% { transform: scaleY(1); opacity: 1; }
+}
+.typing-indicator {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+  height: 16px;
+}
+.typing-indicator span {
+  width: 2px; height: 12px;
+  background: var(--text-dim);
+  display: inline-block;
+  animation: bar-pulse 1.2s infinite;
+}
+.typing-indicator span:nth-child(2) { animation-delay: .15s; }
+.typing-indicator span:nth-child(3) { animation-delay: .3s; }
+
+.chat-footer {
+  border-top: 1px solid var(--border);
+  padding: 20px 48px 24px;
+  background: var(--bg);
+  flex-shrink: 0;
+}
+.chat-input-row {
+  display: flex;
+  border: 1px solid var(--border);
+  transition: border-color 0.2s ease;
+}
+.chat-input-row:focus-within { border-color: var(--border-light); }
+.chat-textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  padding: 14px 16px;
+  resize: none;
+  outline: none;
+  max-height: 120px;
+  line-height: 1.5;
+}
+.chat-textarea::placeholder { color: var(--text-dim); font-style: italic; }
+.chat-send {
+  width: 50px;
+  border: none;
+  border-left: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+.chat-send:hover { background: var(--accent); color: var(--bg); border-left-color: var(--accent); }
+.chat-footer-note {
+  font-family: 'Syne Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  margin-top: 10px;
+  text-align: center;
+}
+
+/* ── GRAIN ───────────────────────────────── */
+.grain {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 1000;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px;
+}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<header id="siteHeader">
+  <div class="wordmark">Study<em>.</em></div>
+  <div class="status-tag" id="statusTag">
+    <div class="status-dot"></div>
+    <span id="statusText">No document loaded</span>
+  </div>
+</header>
+
+<div class="page-grid">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <p class="section-label">01 — Source</p>
+
+    <div class="source-toggle">
+      <button class="src-btn active" onclick="switchSrc(this,'youtube')">Video</button>
+      <button class="src-btn" onclick="switchSrc(this,'pdf')">PDF</button>
+    </div>
+
+    <div id="yt-area" class="field-group">
+      <label class="field-label">URL</label>
+      <input class="field-input" type="url" id="urlInput" placeholder="youtube.com/watch?v=…">
+    </div>
+
+    <div id="pdf-area" class="field-group" style="display:none;">
+      <label class="field-label">Document</label>
+      <div class="drop-zone" id="dropZone"
+        onclick="simulatePDF()"
+        ondragover="event.preventDefault();this.classList.add('hovered')"
+        ondragleave="this.classList.remove('hovered')">
+        <div class="drop-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+          </svg>
+        </div>
+        <p id="dropText">Drop file here or <strong>click to browse</strong></p>
+        <span class="drop-note">PDF · Max 15 MB</span>
+      </div>
+    </div>
+
+    <button class="process-btn" id="processBtn" onclick="simulateProcess()">
+      <div class="btn-bg"></div>
+      <div class="btn-progress" id="btnProgress"></div>
+      <span class="btn-label" id="btnLabel">Process Content</span>
+    </button>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="notes-block">
+      <p class="note-title">Requirements</p>
+      <p>
+        Videos require English captions.<br>
+        PDFs must be text-based.<br>
+        Large files take 20–30 seconds.
+      </p>
+    </div>
+  </aside>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel" id="rightPanel">
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab(this,'flashcards')">Flashcards</button>
+      <button class="tab-btn" onclick="switchTab(this,'quiz')">Quiz</button>
+      <button class="tab-btn" onclick="switchTab(this,'chat')">Chat</button>
+    </div>
+
+    <!-- FLASHCARDS -->
+    <div class="tab-pane active" id="tab-flashcards">
+      <div class="fc-header">
+        <span class="fc-label">Flashcards</span>
+        <span class="fc-counter" id="fcCounter">01 / 05</span>
+      </div>
+      <div class="fc-progress"><div class="fc-progress-fill" id="fcFill" style="width:20%"></div></div>
+
+      <div class="card-scene" onclick="flipCard()">
+        <div class="card-inner" id="cardInner">
+          <div class="card-face card-front">
+            <span class="card-tag">Question</span>
+            <span class="card-flip-hint">— flip</span>
+            <p class="card-q" id="cardFront">What is Retrieval-Augmented Generation?</p>
+            <span class="card-hint">Click to flip</span>
+          </div>
+          <div class="card-face card-back">
+            <span class="card-tag">Answer</span>
+            <span class="card-flip-hint">— flip</span>
+            <p class="card-a" id="cardBack">A technique that retrieves relevant document chunks and injects them into an LLM prompt, grounding responses in real content rather than parametric memory alone.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-nav">
+        <button class="cnav-btn" onclick="prevCard()">Prev</button>
+        <button class="cnav-btn flip" onclick="flipCard()">Flip</button>
+        <button class="cnav-btn" onclick="nextCard()">Next</button>
+      </div>
+    </div>
+
+    <!-- QUIZ -->
+    <div class="tab-pane" id="tab-quiz">
+      <div class="quiz-meta">
+        <span class="quiz-counter" id="quizCounter">Question 01 of 03</span>
+        <span class="score-badge good" id="scoreBadge"></span>
+      </div>
+      <div class="seg-track" id="segTrack">
+        <div class="seg active" onclick="goToQ(0)"></div>
+        <div class="seg" onclick="goToQ(1)"></div>
+        <div class="seg" onclick="goToQ(2)"></div>
+      </div>
+
+      <div class="q-block" id="qBlock">
+        <span class="q-num" id="qNum">Question 01</span>
+        <p class="q-text" id="qText"></p>
+      </div>
+      <div id="optionsWrap"></div>
+      <div class="explanation" id="explanationBox"></div>
+      <div><button class="submit-btn" id="submitBtn" onclick="submitAnswer()" disabled>Submit Answer</button></div>
+    </div>
+
+    <!-- CHAT -->
+    <div class="tab-pane" id="tab-chat">
+      <div class="chat-body" id="chatBody">
+        <div class="chat-empty" id="chatEmpty">
+          <p class="chat-empty-label">02 — Explore</p>
+          <h2 class="chat-empty-heading">Ask anything<br>about <em>your content.</em></h2>
+        </div>
+      </div>
+      <div class="chat-footer">
+        <div class="chat-input-row">
+          <textarea class="chat-textarea" id="chatInput" rows="1" placeholder="Type a question…" onkeydown="chatKey(event)"></textarea>
+          <button class="chat-send" onclick="sendChat()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>
+        <p class="chat-footer-note">Enter to send &nbsp;·&nbsp; Shift+Enter for new line</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+// Page entrance
+const intro = gsap.timeline({ defaults: { ease: 'power3.out' } });
+intro
+  .to('#siteHeader', { opacity: 1, duration: 0.5 })
+  .to('#sidebar', { opacity: 1, x: 0, duration: 0.7 }, '-=0.25')
+  .to('#rightPanel', { opacity: 1, y: 0, duration: 0.7 }, '-=0.55');
+
+// ── SOURCE SWITCH ──────────────────────────
+function switchSrc(btn, which) {
+  document.querySelectorAll('.src-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const yt = document.getElementById('yt-area');
+  const pdf = document.getElementById('pdf-area');
+  if (which === 'youtube') {
+    yt.style.display = 'block';
+    pdf.style.display = 'none';
+    gsap.fromTo(yt, { opacity: 0, y: 5 }, { opacity: 1, y: 0, duration: 0.28 });
+  } else {
+    yt.style.display = 'none';
+    pdf.style.display = 'block';
+    gsap.fromTo(pdf, { opacity: 0, y: 5 }, { opacity: 1, y: 0, duration: 0.28 });
+  }
+}
+
+function simulatePDF() {
+  const dz = document.getElementById('dropZone');
+  dz.classList.add('has-file');
+  document.getElementById('dropText').innerHTML = '<strong>lecture-notes.pdf</strong><br>2.4 MB — ready';
+  gsap.fromTo(dz, { scale: 0.97 }, { scale: 1, duration: 0.35, ease: 'back.out(2)' });
+}
+
+// ── PROCESS ───────────────────────────────
+let processed = false;
+function simulateProcess() {
+  if (processed) return;
+  const btn = document.getElementById('processBtn');
+  const prog = document.getElementById('btnProgress');
+  const label = document.getElementById('btnLabel');
+  btn.disabled = true;
+  btn.classList.add('processing');
+  label.textContent = 'Processing…';
+
+  gsap.to(prog, {
+    width: '100%', duration: 2.2, ease: 'power1.inOut',
+    onComplete: () => {
+      processed = true;
+      btn.classList.remove('processing');
+      btn.classList.add('done');
+      label.textContent = 'Done — 48 chunks indexed';
+      prog.style.width = '0';
+      const tag = document.getElementById('statusTag');
+      document.getElementById('statusText').textContent = 'Document ready';
+      tag.classList.add('live');
+      gsap.fromTo(tag, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: 'back.out(2)' });
+    }
+  });
+}
+
+// ── FLASHCARDS ────────────────────────────
+const cards = [
+  { q: 'What is Retrieval-Augmented Generation?', a: 'A technique that retrieves relevant document chunks and injects them into an LLM prompt, grounding responses in real content rather than parametric memory alone.' },
+  { q: 'What does an embedding model produce?', a: 'A dense vector in high-dimensional space. Semantically similar text is placed near each other, enabling cosine-similarity-based retrieval.' },
+  { q: 'What is a vector database used for?', a: 'Storing embeddings and performing approximate nearest-neighbor search to find the most relevant document chunks for a given query.' },
+  { q: 'What is prompt engineering?', a: 'Crafting inputs to language models using few-shot examples, chain-of-thought prompting, and system instructions to shape output quality.' },
+  { q: 'What is the context window of an LLM?', a: 'The maximum number of tokens a model can process at once, covering both the input prompt and its generated response.' },
+];
+let cardIdx = 0, flipped = false;
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function updateCard() {
+  flipped = false;
+  document.getElementById('cardInner').classList.remove('flipped');
+  const c = cards[cardIdx];
+  document.getElementById('cardFront').textContent = c.q;
+  document.getElementById('cardBack').textContent = c.a;
+  document.getElementById('fcCounter').textContent = `${pad(cardIdx+1)} / ${pad(cards.length)}`;
+  gsap.to('#fcFill', { width: ((cardIdx+1)/cards.length*100)+'%', duration: 0.5, ease: 'power2.out' });
+}
+
+function flipCard() {
+  flipped = !flipped;
+  document.getElementById('cardInner').classList.toggle('flipped', flipped);
+  gsap.fromTo('.card-scene', { scale: 0.985 }, { scale: 1, duration: 0.4, ease: 'back.out(2.5)' });
+}
+
+function prevCard() {
+  gsap.to('.card-scene', { opacity: 0, x: 20, duration: 0.18, ease: 'power2.in', onComplete: () => {
+    cardIdx = (cardIdx - 1 + cards.length) % cards.length;
+    updateCard();
+    gsap.fromTo('.card-scene', { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.3, ease: 'power3.out' });
+  }});
+}
+
+function nextCard() {
+  gsap.to('.card-scene', { opacity: 0, x: -20, duration: 0.18, ease: 'power2.in', onComplete: () => {
+    cardIdx = (cardIdx + 1) % cards.length;
+    updateCard();
+    gsap.fromTo('.card-scene', { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.3, ease: 'power3.out' });
+  }});
+}
+
+// ── QUIZ ──────────────────────────────────
+const quiz = [
+  {
+    q: 'Which component converts document chunks into searchable vector embeddings?',
+    opts: ['The retrieval chain', 'An embedding model', 'The LLM decoder', 'A tokenizer'],
+    correct: 1,
+    exp: 'An embedding model (e.g. text-embedding-ada-002) converts text into dense vectors stored in a vector database, enabling semantic similarity search.'
+  },
+  {
+    q: 'What does "chunking" refer to in a RAG pipeline?',
+    opts: ['Splitting documents into smaller segments', 'Compressing model weights', 'Batching API requests', 'Caching embeddings'],
+    correct: 0,
+    exp: 'Chunking splits documents into smaller pieces so each fits within the model context limit and can be retrieved individually with higher relevance.'
+  },
+  {
+    q: 'What does "temperature" control in language model generation?',
+    opts: ['GPU heat management', 'Randomness of the output', 'Size of the vocabulary', 'Training data recency'],
+    correct: 1,
+    exp: 'Temperature scales the token probability distribution. Higher values produce more varied, creative outputs; lower values produce more deterministic ones.'
+  }
+];
+let qIdx = 0;
+const qAnswers = new Array(quiz.length).fill(null);
+const qResults = new Array(quiz.length).fill(null);
+
+function renderQ() {
+  const q = quiz[qIdx];
+  document.getElementById('quizCounter').textContent = `Question ${pad(qIdx+1)} of ${pad(quiz.length)}`;
+  document.getElementById('qNum').textContent = `Question ${pad(qIdx+1)}`;
+  document.getElementById('qText').textContent = q.q;
+
+  document.querySelectorAll('.seg').forEach((s, i) => {
+    s.className = 'seg';
+    if (i === qIdx) s.classList.add('active');
+    else if (qResults[i] === true) s.classList.add('correct');
+    else if (qResults[i] === false) s.classList.add('wrong');
+  });
+
+  const wrap = document.getElementById('optionsWrap');
+  wrap.innerHTML = '';
+  const answered = qResults[qIdx] !== null;
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-row';
+    if (answered && i === q.correct) btn.classList.add('correct-ans');
+    else if (answered && i === qAnswers[qIdx] && i !== q.correct) btn.classList.add('wrong-ans');
+    else if (!answered && i === qAnswers[qIdx]) btn.classList.add('selected');
+    btn.innerHTML = `<span class="opt-key">${['A','B','C','D'][i]}</span><span class="opt-text">${opt}</span>`;
+    if (!answered) btn.onclick = () => pickOpt(i);
+    wrap.appendChild(btn);
+  });
+
+  gsap.fromTo('.opt-row', { opacity: 0, x: -8 }, { opacity: 1, x: 0, stagger: 0.055, duration: 0.28, ease: 'power2.out' });
+
+  const ex = document.getElementById('explanationBox');
+  if (answered) {
+    ex.className = 'explanation show ' + (qResults[qIdx] ? 'correct-ex' : 'wrong-ex');
+    const label = qResults[qIdx] ? 'Correct' : 'Incorrect';
+    ex.innerHTML = `<strong>${label}</strong>${qResults[qIdx] ? q.exp : 'The correct answer was: "' + q.opts[q.correct] + '"'}`;
+    gsap.fromTo(ex, { opacity: 0, y: 5 }, { opacity: 1, y: 0, duration: 0.3 });
+    const sb = document.getElementById('submitBtn');
+    sb.textContent = qIdx < quiz.length - 1 ? 'Next Question' : 'Finish';
+    sb.disabled = false;
+  } else {
+    ex.className = 'explanation';
+    document.getElementById('submitBtn').textContent = 'Submit Answer';
+    document.getElementById('submitBtn').disabled = qAnswers[qIdx] === null;
+  }
+
+  if (qResults.every(r => r !== null)) {
+    const score = qResults.filter(Boolean).length;
+    const badge = document.getElementById('scoreBadge');
+    badge.textContent = `${score} / ${quiz.length}`;
+    badge.className = 'score-badge ' + (score >= quiz.length * 0.7 ? 'good' : 'ok');
+    badge.style.display = 'inline-block';
+    gsap.fromTo(badge, { scale: 0.85, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: 'back.out(2)' });
+  }
+}
+
+function pickOpt(i) {
+  if (qResults[qIdx] !== null) return;
+  qAnswers[qIdx] = i;
+  document.querySelectorAll('.opt-row').forEach((r, idx) => {
+    r.className = 'opt-row' + (idx === i ? ' selected' : '');
+  });
+  document.getElementById('submitBtn').disabled = false;
+  gsap.fromTo(`.opt-row:nth-child(${i+1})`, { scale: 0.985 }, { scale: 1, duration: 0.25, ease: 'back.out(3)' });
+}
+
+function submitAnswer() {
+  if (qResults[qIdx] !== null) {
+    if (qIdx < quiz.length - 1) {
+      gsap.to(['#qBlock', '#optionsWrap', '#explanationBox'], {
+        opacity: 0, x: -14, duration: 0.18, ease: 'power2.in',
+        onComplete: () => {
+          qIdx++;
+          renderQ();
+          gsap.fromTo(['#qBlock', '#optionsWrap'], { opacity: 0, x: 14 }, { opacity: 1, x: 0, duration: 0.3, ease: 'power3.out' });
+        }
+      });
+    }
+    return;
+  }
+  if (qAnswers[qIdx] === null) return;
+  qResults[qIdx] = qAnswers[qIdx] === quiz[qIdx].correct;
+
+  if (!qResults[qIdx]) {
+    gsap.to(`.opt-row:nth-child(${qAnswers[qIdx]+1})`,
+      { keyframes: { x: [0, -5, 5, -5, 5, 0] }, duration: 0.4, ease: 'power2.out' }
+    );
+  }
+  renderQ();
+}
+
+function goToQ(i) { qIdx = i; renderQ(); }
+renderQ();
+
+// ── CHAT ──────────────────────────────────
+const aiReplies = [
+  "Based on your document, RAG works by first encoding your content as embeddings in a vector store. When you ask a question, the most semantically relevant chunks are retrieved and injected into the model's context window as grounding material — not a workaround, but the core architecture.",
+  "The document explains that embedding models convert text into high-dimensional vectors where semantically similar passages cluster together. This is fundamentally different from keyword search: you're matching meaning, not surface form.",
+  "According to the content, chunking strategy significantly affects retrieval quality. Smaller chunks yield precision but risk losing surrounding context; larger chunks preserve coherence but may dilute relevance. Most pipelines experiment with overlap to balance both.",
+  "Temperature controls the probability distribution over tokens. At zero, the model always picks the most likely token. As temperature rises, lower-probability tokens become competitive — enabling variation, creativity, and diversity in outputs."
+];
+let aiIdx = 0;
+
+function chatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+}
+
+function sendChat() {
+  const inp = document.getElementById('chatInput');
+  const txt = inp.value.trim();
+  if (!txt) return;
+  inp.value = '';
+
+  const emptyEl = document.getElementById('chatEmpty');
+  if (emptyEl) emptyEl.remove();
+
+  addMsg('user', txt);
+
+  // typing
+  const body = document.getElementById('chatBody');
+  const typingRow = document.createElement('div');
+  typingRow.className = 'chat-msg ai';
+  typingRow.id = 'typing';
+  typingRow.innerHTML = `<span class="chat-msg-label">Study AI</span><div class="chat-bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
+  body.appendChild(typingRow);
+  gsap.fromTo(typingRow, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.28 });
+  scrollChat();
+
+  setTimeout(() => {
+    document.getElementById('typing')?.remove();
+    const reply = aiReplies[aiIdx % aiReplies.length]; aiIdx++;
+    const row = addMsg('ai', '');
+    const bubble = row.querySelector('.chat-bubble');
+    let i = 0;
+    const iv = setInterval(() => {
+      bubble.innerHTML = reply.slice(0, i) + '<span class="type-cursor"></span>';
+      i++;
+      if (i > reply.length) { clearInterval(iv); bubble.textContent = reply; }
+      scrollChat();
+    }, 13);
+  }, 700 + Math.random() * 500);
+}
+
+function addMsg(role, text) {
+  const body = document.getElementById('chatBody');
+  const row = document.createElement('div');
+  row.className = `chat-msg ${role}`;
+  row.innerHTML = `<span class="chat-msg-label">${role === 'user' ? 'You' : 'Study AI'}</span><div class="chat-bubble">${text}</div>`;
+  body.appendChild(row);
+  gsap.fromTo(row, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.32, ease: 'power3.out' });
+  scrollChat();
+  return row;
+}
+
+function scrollChat() {
+  document.getElementById('chatBody').scrollTop = 99999;
+}
+
+// ── TABS ──────────────────────────────────
+function switchTab(btn, id) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const cur = document.querySelector('.tab-pane.active');
+  gsap.to(cur, { opacity: 0, y: -6, duration: 0.16, ease: 'power2.in', onComplete: () => {
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    const next = document.getElementById('tab-' + id);
+    next.classList.add('active');
+    gsap.fromTo(next, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' });
+  }});
+}
+</script>
+</body>
+</html>
