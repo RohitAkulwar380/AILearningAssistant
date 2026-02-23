@@ -49,6 +49,27 @@ graph TD;
 3. **Retrieval**: User queries are embedded in real-time. We perform a cosine-similarity search to pull the top 5 most relevant context chunks.
 4. **Augmentation**: Context is injected into a strict system prompt, ensuring the AI remains grounded in the source material.
 
+## 🔄 Model Flexibility
+
+**Study.** is built with a provider-agnostic architecture. Using **OpenRouter** as a bridge, you can switch between state-of-the-art models from OpenAI, Anthropic, and Google without modifying the core codebase.
+
+### Switching Chat Models
+To use a different model for chat, flashcards, and quizzes, simply update the `CHAT_MODEL` environment variable:
+- **GPT-4o Mini:** `openai/gpt-4o-mini`
+- **Gemini 1.5 Flash:** `google/gemini-flash-1.5`
+- **Claude 3.5 Sonnet:** `anthropic/claude-3.5-sonnet`
+- **Llama 3.1 8B (Default):** `meta-llama/llama-3.1-8b-instruct`
+
+### Switching Embedding Models
+While chat models are plug-and-play, switching embedding models requires a small database adjustment to match the model's output dimensions:
+1. **Update `EMBEDDING_MODEL`** (e.g., `google/text-embedding-004`).
+2. **Adjust Supabase Schema**: If the new model uses a different dimensionality (e.g., Gemini is 768, OpenAI is 1536), you must update the `embedding` column in your `documents` table:
+   ```sql
+   ALTER TABLE documents ALTER COLUMN embedding TYPE vector(768);
+   ```
+
+---
+
 ## 🚀 Setup & Installation
 
 ### 1. Prerequisites

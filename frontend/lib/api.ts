@@ -27,8 +27,12 @@ export interface CheckAnswerResult {
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 async function apiFetch<T>(path: string, options: RequestInit): Promise<T> {
-    const res = await fetch(`${API_BASE}${path}`, options);
-    const data = await res.json();
+    // Clean up base and path to avoid double slashes
+    const baseUrl = API_BASE.replace(/\/$/, "");
+    const cleanPath = path.startsWith("/") ? path : `/${path}`;
+
+    const res = await fetch(`${baseUrl}${cleanPath}`, options);
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
         throw new Error(data.detail || `Request failed: ${res.status}`);
     }
