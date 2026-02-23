@@ -78,9 +78,7 @@ def get_video_metadata(url: str) -> dict:
 
 def get_transcript(url: str) -> str:
     """
-    Fetch the English transcript for a YouTube video using a multi-stage fallback approach.
-    1. Try direct 'get_transcript' endpoint.
-    2. Fallback to 'subtitles' list + 'convert' endpoint for auto-generated captions.
+    Fetch the English transcript for a YouTube video using the direct transcript endpoint.
     """
     video_id = extract_video_id(url)
     meta = get_video_metadata(url)
@@ -96,84 +94,54 @@ def get_transcript(url: str) -> str:
         "X-RapidAPI-Key": s.rapidapi_key.strip(),
         "X-RapidAPI-Host": "yt-api.p.rapidapi.com"
     }
+    
+    params = {
+        "id": video_id,
+        "lang": "en"
+    }
 
-    # --- STAGE 1: Try direct GET /get_transcript ---
     try:
-        resp = requests.get(
+        response = requests.get(
             "https://yt-api.p.rapidapi.com/get_transcript",
             headers=headers,
-            params={"id": video_id, "lang": "en"},
+            params=params,
             timeout=15
         )
-        if resp.status_code == 200:
-            data = resp.json()
-            transcript_data = data.get("transcript")
-            if not transcript_data and "data" in data and isinstance(data["data"], dict):
-                transcript_data = data["data"].get("transcript")
+        response.raise_for_status()
+        data = response.json()
+        
+        # Structure: can be {"transcript": [...]} or {"data": {"transcript": [...]}}
+        transcript_data = data.get("transcript")
+        if not transcript_data and "data" in data and isinstance(data["data"], dict):
+            transcript_data = data["data"].get("transcript")
 
-            if transcript_data:
-                transcript_text = " ".join(entry.get("text", "") for entry in transcript_data if isinstance(entry, dict))
-                if transcript_text.strip():
-                    return _format_transcript_result(meta, transcript_text)
+        if not transcript_data:
+             raise HTTPException(
+                status_code=400,
+                detail=f"No transcript found for this video. (Response message: {data.get('msg', 'N/A')})"
+            )
 
-    except Exception as e:
-        print(f"Stage 1 (Direct) failed: {str(e)}")
+        transcript_text = " ".join(entry.get("text", "") for entry in transcript_data if isinstance(entry, dict))
+        if not transcript_text.strip():
+            raise HTTPException(status_code=400, detail="Transcript was found but appeared empty.")
+        
+        return _format_transcript_result(meta, transcript_text)
 
-    # --- STAGE 2: Try GET /subtitles (List) + GET /convert_translate_download_subtitle ---
-    try:
-        # Step A: List available subtitles
-        sub_resp = requests.get(
-            "https://yt-api.p.rapidapi.com/subtitles",
-            headers=headers,
-            params={"id": video_id},
-            timeout=10
+    except requests.exceptions.HTTPError as e:
+        status_code = e.response.status_code
+        try:
+            err_detail = e.response.json().get("msg", e.response.json().get("message", str(e)))
+        except:
+            err_detail = str(e)
+            
+        raise HTTPException(
+            status_code=400 if status_code < 500 else 500,
+            detail=f"RapidAPI Error ({status_code}): {err_detail}"
         )
-        if sub_resp.status_code == 200:
-            subtitles = sub_resp.json()
-            if isinstance(subtitles, list) and len(subtitles) > 0:
-                # Priority: Manual English (.en) > Auto English (a.en) > Any English (en*)
-                target_sub = None
-                
-                # Check for manual English
-                target_sub = next((s for s in subtitles if s.get("vssId") == ".en"), None)
-                # Check for auto-generated English
-                if not target_sub:
-                    target_sub = next((s for s in subtitles if s.get("vssId") == "a.en"), None)
-                # Check for any English variant
-                if not target_sub:
-                    target_sub = next((s for s in subtitles if "en" in s.get("vssId", "").lower()), None)
-                
-                if target_sub and target_sub.get("url"):
-                    # Step B: Convert chosen subtitle track to text
-                    conv_resp = requests.get(
-                        "https://yt-api.p.rapidapi.com/convert_translate_download_subtitle",
-                        headers=headers,
-                        params={"url": target_sub["url"], "format": "json3"},
-                        timeout=15
-                    )
-                    if conv_resp.status_code == 200:
-                        conv_data = conv_resp.json()
-                        # YT JSON3 structure: {"events": [{"segs": [{"utf8": "..."}]}]}
-                        text_parts = []
-                        events = conv_data.get("events", [])
-                        for event in events:
-                            for seg in event.get("segs", []):
-                                if seg.get("utf8"):
-                                    text_parts.append(seg["utf8"])
-                        
-                        final_text = "".join(text_parts).replace("\n", " ")
-                        if final_text.strip():
-                            return _format_transcript_result(meta, final_text)
-
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"Stage 2 (Fallback) failed: {str(e)}")
-
-    # --- FINAL ERROR ---
-    raise HTTPException(
-        status_code=400,
-        detail="Could not find a transcript for this video. Most likely, it has captions disabled "
-               "or is in a language other than English. Please try a different video."
-    )
+        raise HTTPException(status_code=500, detail=f"Failed to fetch YouTube transcript: {str(e)}")
 
 
 def _format_transcript_result(meta: dict, text: str) -> str:
