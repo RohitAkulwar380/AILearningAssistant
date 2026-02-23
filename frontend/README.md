@@ -7,7 +7,7 @@ This is the frontend for **Study.**, a high-fidelity AI Learning Assistant. It i
 - **React 19 / Next.js 15**: Leveraging the App Router for modern component architecture.
 - **GSAP (GreenSock Animation Platform)**: Handles all high-performance animations, including intro sequences, card flips, and interactive feedback.
 - **Vanilla CSS**: Optimized with HSL color variables and CSS Grid for a robust, flexible design system.
-- **OpenRouter / OpenAI**: Integrated for streaming RAG chat and structured content generation.
+- **OpenRouter**: Integrated for streaming RAG chat and structured content generation using Llama 3.1 and OpenAI models.
 
 ## 🏗️ UI Architecture
 

@@ -22,8 +22,8 @@ Context:
 def _get_client() -> AsyncOpenAI:
     s = get_settings()
     return AsyncOpenAI(
-        api_key=s.openai_api_key,
-        base_url=s.openai_base_url or None,
+        api_key=s.openrouter_api_key,
+        base_url=s.openrouter_base_url,
     )
 
 

@@ -70,7 +70,7 @@ The project is evaluated heavily on **RAG quality (20%)**, **AI integration (20%
 └──────────┘
              │
 ┌────────────▼────────────────────┐
-│     OpenAI / Gemini API         │
+│     OpenRouter / Gemini API         │
 │  - Embeddings                   │
 │  - Chat completions (streaming) │
 │  - Flashcard/Quiz generation    │
@@ -95,7 +95,7 @@ Build in this order. Each layer depends on the one before it.
 Set up FastAPI with the five required endpoints returning stub responses. This gives you a working API contract to build against from day one.
 
 ```bash
-pip install fastapi uvicorn python-multipart pydantic openai supabase youtube-transcript-api pypdf2 langchain tiktoken
+pip install fastapi uvicorn python-multipart pydantic OpenRouter supabase youtube-transcript-api pypdf2 langchain tiktoken
 ```
 
 ```python
@@ -154,9 +154,9 @@ This is arguably the most important step. Poor chunking = poor RAG.
 
 ```python
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from openai import OpenAI
+from OpenRouter import OpenRouter
 
-client = OpenAI()
+client = OpenRouter()
 
 def chunk_text(text: str) -> list[str]:
     splitter = RecursiveCharacterTextSplitter(
@@ -475,7 +475,7 @@ except NoTranscriptFound:
 
 **Problem:** Even with explicit prompting, GPT occasionally wraps JSON in markdown, adds commentary, or truncates the array.
 
-**Fix:** Always use the `parse_json_response` function from Section 5. Additionally, use `response_format={"type": "json_object"}` with newer OpenAI models to enforce JSON output.
+**Fix:** Always use the `parse_json_response` function from Section 5. Additionally, use `response_format={"type": "json_object"}` with newer OpenRouter models to enforce JSON output.
 
 ### 7.4 Embedding API Rate Limits
 
@@ -528,7 +528,7 @@ app.add_middleware(
 ```typescript
 export const maxDuration = 60; // seconds (requires Pro plan for values > 10)
 ```
-Or proxy the stream through your FastAPI backend instead of calling OpenAI directly from Next.js.
+Or proxy the stream through your FastAPI backend instead of calling OpenRouter directly from Next.js.
 
 ---
 
@@ -536,7 +536,7 @@ Or proxy the stream through your FastAPI backend instead of calling OpenAI direc
 
 ### ❌ Don't Store API Keys in Code
 
-Never hardcode `OPENAI_API_KEY` or database credentials. Use `.env` files locally and environment variable settings on your deployment platform.
+Never hardcode `OPENROUTER_API_KEY` or database credentials. Use `.env` files locally and environment variable settings on your deployment platform.
 
 ### ❌ Don't Skip Session Isolation
 
@@ -633,7 +633,7 @@ Understanding the limitations of your own system shows maturity. Document these 
 
 - **Return meaningful HTTP status codes.** `400` for bad input (invalid URL, empty PDF), `422` for validation errors, `500` for unexpected failures.
 - **Never expose raw Python stack traces to the frontend.** Catch exceptions and return a clean error message.
-- **Add a timeout** on your YouTube and OpenAI API calls so a single slow request doesn't hang the server indefinitely.
+- **Add a timeout** on your YouTube and OpenRouter API calls so a single slow request doesn't hang the server indefinitely.
 
 ### Security
 
@@ -659,7 +659,7 @@ ai-learning-assistant/
 │   ├── services/
 │   │   ├── extraction.py        # YouTube + PDF text extraction
 │   │   ├── chunking.py          # Text splitting logic
-│   │   ├── embeddings.py        # OpenAI embedding calls
+│   │   ├── embeddings.py        # OpenRouter embedding calls
 │   │   ├── vector_store.py      # Supabase pgvector operations
 │   │   ├── generation.py        # Flashcard + quiz generation
 │   │   └── rag.py               # Retrieval + chat logic
@@ -694,7 +694,7 @@ ai-learning-assistant/
 
 ```bash
 # .env (backend)
-OPENAI_API_KEY=sk-...
+OPENROUTER_API_KEY=sk-...
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_KEY=your-anon-or-service-key
 ALLOWED_ORIGINS=http://localhost:3000,https://your-app.vercel.app

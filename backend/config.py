@@ -4,18 +4,17 @@ from typing import Optional
 
 
 class Settings(BaseSettings):
-    openai_api_key: str
+    openrouter_api_key: str
     supabase_url: str
     supabase_key: str
     allowed_origins: str = "http://localhost:3000"
 
-    # Optional: set to use OpenRouter or any OpenAI-compatible provider
-    # e.g. https://openrouter.ai/api/v1
-    openai_base_url: Optional[str] = "https://openrouter.ai/api/v1"
+    # Default OpenRouter API base
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
-    # Model names — use OpenRouter format if needed e.g. "openai/gpt-4o-mini"
+    # Model names — using OpenRouter format
     chat_model: str = "meta-llama/llama-3.1-8b-instruct"
-    embedding_model: str = "text-embedding-3-small"
+    embedding_model: str = "openai/text-embedding-3-small"
 
     @property
     def origins_list(self) -> list[str]:
@@ -23,6 +22,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+        env_file_encoding = "utf-8"
 
 
 @lru_cache()

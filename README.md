@@ -26,7 +26,7 @@
 | **Frontend** | [Next.js 15](https://nextjs.org/) (App Router), [GSAP](https://gsap.com/) for animations, Vanilla CSS with HSL variables. |
 | **Backend** | [FastAPI](https://fastapi.tiangolo.com/) (Python) for asynchronous, high-performance API handling. |
 | **Database** | [Supabase](https://supabase.com/) (PostgreSQL) + **pgvector** for semantic similarity search. |
-| **AI Engine** | [OpenAI](https://openai.com/) (`text-embedding-3-small` / `gpt-4o-mini`) via [OpenRouter](https://openrouter.ai/). |
+| **AI Engine** | [OpenRouter](https://openrouter.ai/) (`meta-llama/llama-3.1-8b-instruct` / `openai/text-embedding-3-small`). |
 | **Processing** | `LangChain` for recursive character chunking and semantic splitting. |
 
 ## 🏗️ Architecture
@@ -37,7 +37,7 @@ graph TD;
     B -->|YouTube| C[Transcript API];
     B -->|PDF| D[PyPDF Extraction];
     C & D --> E[Recursive Chunking];
-    E --> F[OpenAI Embeddings];
+    E --> F[OpenRouter API];
     F --> G[(Supabase pgvector)];
     G --> H[RAG Retrieval];
     H --> I[AI Chat / Flashcards / Quiz];
@@ -60,7 +60,7 @@ graph TD;
 ```bash
 cd backend
 cp .env.example .env
-# Fill in your OPENAI_API_KEY, SUPABASE_URL, and SUPABASE_KEY
+# Fill in your OPENROUTER_API_KEY, SUPABASE_URL, and SUPABASE_KEY
 python -m venv venv
 source venv/bin/activate # or venv\Scripts\activate on Windows
 pip install -r requirements.txt
