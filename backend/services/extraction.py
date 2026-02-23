@@ -5,11 +5,7 @@ import requests
 
 import pypdf
 from fastapi import HTTPException
-from youtube_transcript_api import (
-    NoTranscriptFound,
-    TranscriptsDisabled,
-    YouTubeTranscriptApi,
-)
+from config import get_settings
 
 
 def extract_video_id(url: str) -> str:
@@ -77,23 +73,43 @@ def get_video_metadata(url: str) -> dict:
 
 def get_transcript(url: str) -> str:
     """
-    Fetch the English transcript for a YouTube video.
-    Raises HTTP 400 if no transcript is available.
+    Fetch the English transcript for a YouTube video using Supadata via RapidAPI.
+    This bypasses YouTube's bot detection on data center IPs like Railway.
     """
     video_id = extract_video_id(url)
     meta = get_video_metadata(url)
-    
+    s = get_settings()
+
+    if not s.rapidapi_key:
+        raise HTTPException(
+            status_code=500,
+            detail="RapidAPI key not configured. Cannot fetch YouTube transcript."
+        )
+
+    # Supadata YouTube Transcripts API endpoint
+    rapid_url = "https://youtube-transcripts.p.rapidapi.com/youtube/transcript"
+    headers = {
+        "X-RapidAPI-Key": s.rapidapi_key,
+        "X-RapidAPI-Host": "youtube-transcripts.p.rapidapi.com"
+    }
+    params = {"url": url}
+
     try:
-        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
-        # Try to find English specifically or just fetch the first one
-        try:
-            entries = transcript_list.find_transcript(["en", "en-US"]).fetch()
-        except:
-            # Fallback to the first available transcript
-            entries = next(iter(transcript_list)).fetch()
-            
-        transcript_text = " ".join(entry.text for entry in entries)
-        # Prepend rich metadata so RAG can answer identity/date/duration questions
+        response = requests.get(rapid_url, headers=headers, params=params, timeout=15)
+        response.raise_for_status()
+        data = response.json()
+        
+        # Supadata response structure: {"transcript": [{"text": "...", "offset": ...}, ...]}
+        # If they returned success but no transcript field
+        if "transcript" not in data or not data["transcript"]:
+             raise HTTPException(
+                status_code=400,
+                detail="No transcript found for this video. It might have captions disabled."
+            )
+
+        entries = data["transcript"]
+        transcript_text = " ".join(entry["text"] for entry in entries)
+        
         header = (
             f"SOURCE METADATA (Use this for general info about the source/author):\n"
             f"- Title: {meta['title']}\n"
@@ -102,24 +118,20 @@ def get_transcript(url: str) -> str:
             f"- Video Duration: {meta['duration']}\n\n"
         )
         return f"{header}TRANSCRIPT CONTEXT:\n{transcript_text}"
-    except TranscriptsDisabled:
+
+    except requests.exceptions.HTTPError as e:
+        status_code = e.response.status_code
+        try:
+            err_detail = e.response.json().get("message", str(e))
+        except:
+            err_detail = str(e)
+            
         raise HTTPException(
-            status_code=400,
-            detail="This video has transcripts disabled. Please try a different video.",
-        )
-    except NoTranscriptFound:
-        raise HTTPException(
-            status_code=400,
-            detail="No English transcript found for this video.",
+            status_code=400 if status_code < 500 else 500,
+            detail=f"RapidAPI Error ({status_code}): {err_detail}"
         )
     except Exception as e:
-        msg = str(e)
-        if "no element found" in msg or "xml" in msg.lower():
-            raise HTTPException(
-                status_code=400, 
-                detail="YouTube blocked the transcript request or returned empty data. Please try a different video."
-            )
-        raise HTTPException(status_code=400, detail=f"Could not fetch transcript: {msg}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch YouTube transcript: {str(e)}")
 
 
 def extract_pdf_text(file_bytes: bytes) -> str:

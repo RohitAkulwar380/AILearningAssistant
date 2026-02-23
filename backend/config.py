@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     supabase_url: str
     supabase_key: str
     allowed_origins: str = "http://localhost:3000"
+    rapidapi_key: Optional[str] = None
 
     # Default OpenRouter API base
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
