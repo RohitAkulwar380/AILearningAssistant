@@ -97,22 +97,32 @@ def get_transcript(url: str) -> str:
         "X-RapidAPI-Key": s.rapidapi_key.strip(),
         "X-RapidAPI-Host": "yt-api.p.rapidapi.com"
     }
-    params = {"id": video_id}
+    # Some URLs might have 'en' or 'en-US'. Specifying 'en' is a safe default.
+    params = {"id": video_id, "lang": "en"}
 
     try:
         response = requests.get(rapid_url, headers=headers, params=params, timeout=15)
         response.raise_for_status()
         data = response.json()
         
-        # Structure: {"transcript": [{"text": "...", "startTime": ...}, ...]}
-        if "transcript" not in data or not data["transcript"]:
-             raise HTTPException(
-                status_code=400,
-                detail="No transcript found for this video. It might have captions disabled."
-            )
+        # Structure: can be {"transcript": [...]} or {"data": {"transcript": [...]}}
+        transcript_data = data.get("transcript")
+        if not transcript_data and "data" in data and isinstance(data["data"], dict):
+            transcript_data = data["data"].get("transcript")
 
-        entries = data["transcript"]
-        transcript_text = " ".join(entry["text"] for entry in entries)
+        if not transcript_data:
+             # Fallback: check if the whole response is the list (some APIs do this)
+             if isinstance(data, list):
+                 transcript_data = data
+             else:
+                 raise HTTPException(
+                    status_code=400,
+                    detail=f"No transcript found for this video. It might have captions disabled or be in a different language. (Response keys: {list(data.keys())})"
+                )
+
+        transcript_text = " ".join(entry.get("text", "") for entry in transcript_data if isinstance(entry, dict))
+        if not transcript_text.strip():
+            raise HTTPException(status_code=400, detail="Transcript was found but appeared empty.")
         
         header = (
             f"SOURCE METADATA (Use this for general info about the source/author):\n"
@@ -134,6 +144,9 @@ def get_transcript(url: str) -> str:
             status_code=400 if status_code < 500 else 500,
             detail=f"RapidAPI Error ({status_code}): {err_detail}"
         )
+    except HTTPException:
+        # Re-raise our own validation errors
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch YouTube transcript: {str(e)}")
 
