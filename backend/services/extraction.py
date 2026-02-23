@@ -86,21 +86,20 @@ def get_transcript(url: str) -> str:
             detail="RapidAPI key not configured. Cannot fetch YouTube transcript."
         )
 
-    # Supadata YouTube Transcripts API endpoint
-    rapid_url = "https://youtube-transcripts.p.rapidapi.com/youtube/transcript"
+    # YT-API Video Transcript endpoint
+    rapid_url = "https://yt-api.p.rapidapi.com/get_transcript"
     headers = {
         "X-RapidAPI-Key": s.rapidapi_key,
-        "X-RapidAPI-Host": "youtube-transcripts.p.rapidapi.com"
+        "X-RapidAPI-Host": "yt-api.p.rapidapi.com"
     }
-    params = {"url": url}
+    params = {"id": video_id}
 
     try:
         response = requests.get(rapid_url, headers=headers, params=params, timeout=15)
         response.raise_for_status()
         data = response.json()
         
-        # Supadata response structure: {"transcript": [{"text": "...", "offset": ...}, ...]}
-        # If they returned success but no transcript field
+        # Structure: {"transcript": [{"text": "...", "startTime": ...}, ...]}
         if "transcript" not in data or not data["transcript"]:
              raise HTTPException(
                 status_code=400,
