@@ -45,6 +45,7 @@ export default function InputPanel({ sessionId, onReady, onReset, isReady }: Pro
     };
 
     const handleProcess = async () => {
+        onReset(); // Clear current 'ready' state and old content results
         setStatus("processing");
         setError("");
         try {

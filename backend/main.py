@@ -61,13 +61,13 @@ async def process_video(data: ProcessVideoRequest):
     Extract transcript from a YouTube video URL, chunk it, embed it,
     and store in Supabase under the given session_id.
     """
+    await delete_session_data(data.session_id)
     transcript = get_transcript(data.url)
     chunks = chunk_text(transcript)
     if not chunks:
         raise HTTPException(status_code=422, detail="Transcript was too short to process.")
 
     embeddings = await embed_chunks(chunks)
-    await delete_session_data(data.session_id)
     await store_chunks(data.session_id, chunks, embeddings, source_type="youtube")
 
     return ProcessVideoResponse(
@@ -96,6 +96,7 @@ async def process_pdf(data: ProcessPdfRequest):
     if len(file_bytes) > 15 * 1024 * 1024:  # 15 MB limit
         raise HTTPException(status_code=400, detail="File too large. Maximum size is 15 MB.")
 
+    await delete_session_data(data.session_id)
     text = extract_pdf_text(file_bytes)
     
     chunks = chunk_text(text)
@@ -103,7 +104,6 @@ async def process_pdf(data: ProcessPdfRequest):
         raise HTTPException(status_code=422, detail="Could not extract enough text from the PDF.")
 
     embeddings = await embed_chunks(chunks)
-    await delete_session_data(data.session_id)
     await store_chunks(data.session_id, chunks, embeddings, source_type="pdf")
 
     return ProcessPdfResponse(

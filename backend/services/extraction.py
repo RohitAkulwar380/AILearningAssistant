@@ -10,8 +10,13 @@ from config import get_settings
 
 def extract_video_id(url: str) -> str:
     """Parse YouTube video ID from a URL."""
-    pattern = r"(?:v=|youtu\.be/)([A-Za-z0-9_-]{11})"
+    # Support for standard watch URLs, short links (youtu.be), shorts, live, and embed URLs
+    pattern = r"(?:v=|\/v\/|\/embed\/|\/shorts\/|\/live\/|^)([A-Za-z0-9_-]{11})(?:\?|&|$|\/)"
     match = re.search(pattern, url)
+    if not match:
+        # Fallback for youtu.be links specifically if start of string isn't anchoring well
+        pattern_short = r"youtu\.be\/([A-Za-z0-9_-]{11})"
+        match = re.search(pattern_short, url)
     if not match:
         raise HTTPException(status_code=400, detail="Invalid YouTube URL. Could not find a video ID.")
     return match.group(1)
