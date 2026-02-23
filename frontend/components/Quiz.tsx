@@ -29,8 +29,9 @@ export default function Quiz({ questions, sessionId }: Props) {
     const allAnswered = results.every((r) => r !== null);
 
     // Entrance staggered animation
+    // Entrance staggered animation
     useGSAP(() => {
-        gsap.fromTo(".opt-row",
+        gsap.fromTo([".q-block", ".opt-row", ".explanation"],
             { opacity: 0, x: -8 },
             { opacity: 1, x: 0, stagger: 0.055, duration: 0.28, ease: "power2.out" }
         );
