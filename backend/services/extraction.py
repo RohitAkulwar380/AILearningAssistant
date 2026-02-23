@@ -84,9 +84,7 @@ def get_transcript(url: str) -> str:
     meta = get_video_metadata(url)
     
     try:
-        # v1.2.x uses YouTubeTranscriptApi().list(video_id)
-        api = YouTubeTranscriptApi()
-        transcript_list = api.list(video_id)
+        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
         # Try to find English specifically or just fetch the first one
         try:
             entries = transcript_list.find_transcript(["en", "en-US"]).fetch()
